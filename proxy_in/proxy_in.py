@@ -40,6 +40,7 @@ def main() :
             # forward data into diode
             print(str(data))
 
+
     finally :
         print("closing socket, do not interrupt ...")
         sock.close()
@@ -58,4 +59,7 @@ def set_arp_entry(target_ip, target_mac) :
     # execute shell command
     os.system(arp_command)
 
-main()
+
+
+if __name__ == '__main__' :
+    main()
