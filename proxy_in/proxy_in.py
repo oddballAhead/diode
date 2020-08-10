@@ -3,6 +3,8 @@
 # Simply receives datagrams on a udp socket, and forwards them
 # through the diode
 #
+# Needs to be run as sudo, or many of the system calls will not work
+#
 # Reads a .ini file as a config upon startup.
 #
 
@@ -10,6 +12,8 @@ import configparser                 #
 import socket                       #
 import os                           # for creating arp-table entry
 import numpy                        # For getting proper arrays
+import pylibpcap                    # For easy access to link layer frames
+from pylibpcap.pcap import sniff
 
 
 # Port number for sending on diode
@@ -28,7 +32,8 @@ def main() :
     if os.geteuid() != 0 :
         print('You are not root. Cannot add static arp entry. Program will continue, assuming you have already done so')
     else :
-        set_arp_entry(config['address']['proxy_out_ip'], config['address']['proxy_out_mac_address'])
+        pass
+        # set_arp_entry(config['address']['proxy_out_ip'], config['address']['proxy_out_mac_address'])
 
     TARGET_IP = config['address']['proxy_out_ip']
     SELF_IP = config['address']['self_ip_address']
@@ -38,23 +43,34 @@ def main() :
     # Create lookup table
     TABLE = create_lookup_table(config)
 
-    sock_recv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock_recv.bind((SELF_IP, int(RECEIVE_PORT)))
+    # sock_recv = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+    # sock_recv.bind(('enp0s25', ))  # TODO: finish this
+    # sock_recv.bind((SELF_IP, int(RECEIVE_PORT)))
     sock_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     # Starting the main server loop:
     try :
-        while True :
-            # Trying to receive data on a pure udp-socket, this might not work depending on how data is sent
-            data = sock_recv.recvfrom(int(RECEIVE_PORT))
-            print(str(data))
+        # Trying to receive data on a pure udp-socket, this might not work depending on how data is sent
+        # data = sock_recv.recvfrom(int(RECEIVE_PORT))
+        for plen, t, data in sniff("enp0s25", filters="port 60000", count=40, promisc=1, out_file="pcap.pcap"):
+            print("[+]: Payload len=", plen)
+            print("[+]: Time", t)
+            print("[+]: Payload", data)
+
+            # Add code to extract ASDU here
+
             # forward data into diode
             if valid(data, TABLE) :
                 sock_send.sendto(data, (TARGET_IP, int(SEND_PORT)))
 
+
+
+
+
+
     finally :
         print("closing sockets, do not interrupt ...")
-        sock_recv.close()
+        # sock_recv.close()
         sock_send.close()
         print("finished ...")
 
@@ -76,12 +92,8 @@ def get_asdu_id(s) :
 # Call shell command to add arp entry
 # Warning: Linux-specific code
 def set_arp_entry(target_ip, target_mac) :
-    print(target_ip, type(target_ip))
-    print(target_mac, type(target_mac))  # these were successfully passed as strings
-
     arp_command = 'arp -s ' + target_ip + ' ' + target_mac
     print(arp_command)
-
     # execute shell command
     os.system(arp_command)
 

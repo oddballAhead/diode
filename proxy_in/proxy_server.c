@@ -45,13 +45,65 @@ rawMessageHandler(void* parameter, IMasterConnection conneciton, uint8_t* msg, i
     printf("\n");
 }
 
+static bool
+clockSyncHandler (void* parameter, IMasterConnection connection, CS101_ASDU asdu, CP56Time2a newTime)
+{
+    printf("Process time sync command with time "); printCP56Time2a(newTime); printf("\n");
+
+    uint64_t newSystemTimeInMs = CP56Time2a_toMsTimestamp(newTime);
+
+    /* Set time for ACT_CON message */
+    CP56Time2a_setFromMsTimestamp(newTime, Hal_getTimeInMs());
+
+    /* update system time here */
+
+    return true;
+}
+
+static bool
+connectionRequestHandler(void* parameter, const char* ipAddress)
+{
+    printf("New connection request from %s\n", ipAddress);
+
+#if 0
+    if (strcmp(ipAddress, "127.0.0.1") == 0) {
+        printf("Accept connection\n");
+        return true;
+    }
+    else {
+        printf("Deny connection\n");
+        return false;
+    }
+#else
+    return true;
+#endif
+}
+
+static void
+connectionEventHandler(void* parameter, IMasterConnection con, CS104_PeerConnectionEvent event)
+{
+    if (event == CS104_CON_EVENT_CONNECTION_OPENED) {
+        printf("Connection opened (%p)\n", con);
+    }
+    else if (event == CS104_CON_EVENT_CONNECTION_CLOSED) {
+        printf("Connection closed (%p)\n", con);
+    }
+    else if (event == CS104_CON_EVENT_ACTIVATED) {
+        printf("Connection activated (%p)\n", con);
+    }
+    else if (event == CS104_CON_EVENT_DEACTIVATED) {
+        printf("Connection deactivated (%p)\n", con);
+    }
+}
+
 /* Handler to handle incoming ASDUs */
 static bool
 asduHandler(void* parameter, IMasterConnection connection, CS101_ASDU asdu)
 {
     /* the asdu parameter contains the actual asdu that was received */
     /* Add code that re-sends the asdu through an udp-socket associated with the diode */
-
+    /* This is where the actual code goes */
+    
     return false;
 }
 
@@ -89,9 +141,6 @@ main(int argc, char** argv)
 
     /* set the callback handler for the clock synchronization command */
     CS104_Slave_setClockSyncHandler(slave, clockSyncHandler, NULL);
-
-    /* set the callback handler for the interrogation command */
-    CS104_Slave_setInterrogationHandler(slave, interrogationHandler, NULL);
 
     /* set handler for other message types */
     CS104_Slave_setASDUHandler(slave, asduHandler, NULL);
