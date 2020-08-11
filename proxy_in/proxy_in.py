@@ -31,7 +31,8 @@ def main() :
     # Check if this program was started as root.
     # If yes: will attempt to add arp table entry
     if os.geteuid() != 0 :
-        print('You are not root. Cannot add static arp entry. Program will continue, assuming you have already done so')
+        print('You are not root. Program will not work, exiting...')
+        exit(1)
     else :
         pass
         # set_arp_entry(config['address']['proxy_out_ip'], config['address']['proxy_out_mac_address'])
@@ -60,12 +61,16 @@ def main() :
 
         # sniff() returns generator object, this can be iterated like a loop
         for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
+            print('len type:', type(plen))
+            print('time type:', type(t))
+            print('data (payload) type:', type(data))
             print("[+]: Payload len=", plen)
             print("[+]: Time", t)
             print("[+]: Payload:", '0x ' + data.hex(), end='\n\n')
 
             # Add code to extract ASDU here
-            # asdu = extract_asdu()
+            print('ASDU extraction:')
+            asdu = extract_asdu(data)
 
             # forward data into diode
             if valid(data, TABLE) :
@@ -113,9 +118,36 @@ def valid(apdu, TABLE) :
 
 
 # Parse the entire ethernet frame, extract asdu payload and return
-def extract_asdu() :
+def extract_asdu(data) :
+    eth_stripped = strip_ethernet_frame(data)
+    print('ether stripped:', eth_stripped.hex())
+    print('len:', len(eth_stripped))
+
+    ip_stripped = strip_ip_header(eth_stripped)
     return None
 
+# Give an ethernet frame, returns a copy with header removed
+def strip_ethernet_frame(frame) :
+    MAC_LEN = 6                             # length of a mac address in bytes
+    ethertype = frame[12:14]
+    ethertype = int.from_bytes(ethertype, byteorder='big', signed=False) # check efficiency of this, and if 'big' is correct
+    print('ethertype expected: 2048, actual:', ethertype)
+    Q = 0x8100   # 802.1Q tag
+    AD = 0x88a8  # 802.1ad tag
+    if ethertype == Q or ethertype == AD:
+        #TODO: Add support for these tags
+        print('Error, tags not supported!')
+        exit(1)
+    elif ethertype > 1535 :
+        payload_start = 2 * MAC_LEN + 2
+    else :
+        #TODO: Add support for embedded frame size
+        print('Error: Unsupported ethernet frame format!')
+        exit(1)
+    return frame[payload_start:]   # TODO: remove the trailing checksum here as well
+
+def strip_ip_header(packet) :
+    pass
 
 
 if __name__ == '__main__' :
