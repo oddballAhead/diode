@@ -1,0 +1,25 @@
+
+
+# Here is a frame captured from a udp-sender (should be ethernet/ip/udp headers + payload, nothing more)
+# udp header = 8 byte
+# ip header = minimum 20 bytes, can be more if options field is present
+
+# 0x60 = 96dec,   60dec = 0x3c
+# payload length was reported to be 60 here (hex or decimal???)
+
+
+    source mac     dest mac       ???
+0x  3c970ebedc68   448a5bb5b364   0800      450000  1fd73c  40004011  c2e1c0a80fafc0a80fb0  c88f  ea6000  0b48052d3237000000000000000000000000000000
+
+
+0x 3c970ebedc68    448a5bb5b364   0800      450000  1fd6fa  40004011  c323c0a80fafc0a80fb0  c88f  ea6000  0b4f062d3130000000000000000000000000000000
+
+
+0x 3c970ebedc68    448a5bb5b364   0800      450000  1dd68b  40004011  c394c0a80fafc0a80fb0  c88f  ea6000  09733b390000000000000000000000000000000000
+
+
+# A packet where payload length was reported as 90:
+0x 3c970ebedc68    448a5bb5b364   0800      450000  4cfc28  40004011  9dc8c0a80fafc0a80fb0  a5b6  ea6000  3863625b2d382c2031322c202d32352c202d31372c
+                                            202d33302c2032392c202d31332c20302c202d392c2032312c202d31335d
+
+

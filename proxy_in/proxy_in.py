@@ -14,6 +14,7 @@ import os                           # for creating arp-table entry
 import numpy                        # For getting proper arrays
 import pylibpcap                    # For easy access to link layer frames
 from pylibpcap.pcap import sniff
+from time import sleep
 
 
 # Port number for sending on diode
@@ -52,19 +53,23 @@ def main() :
     try :
         # Trying to receive data on a pure udp-socket, this might not work depending on how data is sent
         # data = sock_recv.recvfrom(int(RECEIVE_PORT))
-        for plen, t, data in sniff("enp0s25", filters="port 60000", count=40, promisc=1, out_file="pcap.pcap"):
+
+        # res = sniff("enp0s25", filters="port 60000", count=1, promisc=1, out_file="pcap.pcap")
+        # print(res)
+        # sleep(3)
+
+        # sniff() returns generator object, this can be iterated like a loop
+        for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
             print("[+]: Payload len=", plen)
             print("[+]: Time", t)
-            print("[+]: Payload", data)
+            print("[+]: Payload:", '0x ' + data.hex(), end='\n\n')
 
             # Add code to extract ASDU here
+            # asdu = extract_asdu()
 
             # forward data into diode
             if valid(data, TABLE) :
                 sock_send.sendto(data, (TARGET_IP, int(SEND_PORT)))
-
-
-
 
 
 
@@ -105,6 +110,11 @@ def valid(apdu, TABLE) :
     else :
         # TODO: Add validation checks for apci's with no asdu
         return True
+
+
+# Parse the entire ethernet frame, extract asdu payload and return
+def extract_asdu() :
+    return None
 
 
 
