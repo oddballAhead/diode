@@ -16,6 +16,8 @@ import pylibpcap                    # For easy access to link layer frames
 from pylibpcap.pcap import sniff
 from time import sleep
 
+import pcapy
+
 
 # Port number for sending on diode
 PORT = '60000'
@@ -23,6 +25,7 @@ PORT = '60000'
 # Specifying a unix file path here, so this will not work on windows...
 CONFIG_PATH = '../config/config.ini'
 
+WITH_UDP_TEST = True
 
 def main() :
     config = configparser.ConfigParser()
@@ -61,28 +64,36 @@ def main() :
 
         # sniff() returns generator object, this can be iterated like a loop
         for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
-            print('len type:', type(plen))
-            print('time type:', type(t))
-            print('data (payload) type:', type(data))
+            # print('len type:', type(plen))
+            # print('time type:', type(t))
+            # print('data (payload) type:', type(data))
             print("[+]: Payload len=", plen)
             print("[+]: Time", t)
             print("[+]: Payload:", '0x ' + data.hex(), end='\n\n')
 
             # Add code to extract ASDU here
             print('ASDU extraction:')
-            asdu = extract_asdu(data)
+            apdu = extract_apdu(data)
+
+            if WITH_UDP_TEST :
+                # convert apdu to list of integers
+                data_received = str(apdu)
+                print('Length of data received:', len(data_received))
+                print('data received:', data_received, end='\n\n\n')
+                continue
 
             # forward data into diode
-            if valid(data, TABLE) :
-                sock_send.sendto(data, (TARGET_IP, int(SEND_PORT)))
-
-
+            if valid(apdu, TABLE) :
+                print('Apdu valid, re-transmitting...')
+                sock_send.sendto(apdu, (TARGET_IP, int(SEND_PORT)))
 
     finally :
         print("closing sockets, do not interrupt ...")
         # sock_recv.close()
         sock_send.close()
         print("finished ...")
+
+        
 
 # Read allowed ASDUs from config and create access-lookup array
 def create_lookup_table(config) :
@@ -118,18 +129,33 @@ def valid(apdu, TABLE) :
 
 
 # Parse the entire ethernet frame, extract asdu payload and return
-def extract_asdu(data) :
+# WARNING: Assuming that only ethernet frames are received,
+#          if another frame type is received, the behavior is unspecified
+def extract_apdu(data) :
+    # step 1: strip ethernet header
     eth_stripped = strip_ethernet_frame(data)
     print('ether stripped:', eth_stripped.hex())
     print('len:', len(eth_stripped))
 
+    # step 2: strip ip header
     ip_stripped = strip_ip_header(eth_stripped)
-    return None
+    print('ip stripped:', ip_stripped.hex())
+    print('len', len(ip_stripped))
+
+    # step 3: strip tcp/udp header
+    if WITH_UDP_TEST :
+        apdu = strip_udp_header(ip_stripped)
+        print('udp stripped:', apdu.hex())
+        print('len', len(apdu))
+        return apdu
+
+    apdu = strip_tcp_header(ip_stripped)
+    return apdu
 
 # Give an ethernet frame, returns a copy with header removed
 def strip_ethernet_frame(frame) :
     MAC_LEN = 6                             # length of a mac address in bytes
-    ethertype = frame[12:14]
+    ethertype = frame[12:14]                # extract the ethertype from header
     ethertype = int.from_bytes(ethertype, byteorder='big', signed=False) # check efficiency of this, and if 'big' is correct
     print('ethertype expected: 2048, actual:', ethertype)
     Q = 0x8100   # 802.1Q tag
@@ -146,8 +172,38 @@ def strip_ethernet_frame(frame) :
         exit(1)
     return frame[payload_start:]   # TODO: remove the trailing checksum here as well
 
+# get ip packet and return a copy with ip-header removed
 def strip_ip_header(packet) :
-    pass
+    # ip header has variable length, first calculate the length
+    first_byte = packet[0]
+    IHL = first_byte & 0b1111
+    if IHL > 5 :
+        # Handle longer ip-headers here
+        print('ip-header with options field not supported yet! exiting...')
+        exit(1)
+    elif IHL == 5 :
+        ip_len = 20
+    else :
+        print('What error: impossibly small ip-header')
+        exit(1)
+    return packet[ip_len:]
+
+# udp headers have a fixed length of 8 byte
+def strip_udp_header(dgram) :
+    return dgram[8:]
+
+# tcp headers have variable length
+def strip_tcp_header(segment) :
+    length = (segment[12] >> 4) & 0b1111
+    if length > 5 :
+        print('Error: longer tcp segments not supported yet')
+        exit(1)
+    elif length == 5 :
+        tcp_hdr_size = 20
+    else :
+        print('Error: tcp-header too small')
+        exit(1)
+    return segment[tcp_hdr_size:]
 
 
 if __name__ == '__main__' :
