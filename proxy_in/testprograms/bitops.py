@@ -3,6 +3,28 @@
 #
 
 import random
+import sys
+import pickle
+
+
+text = "Hello there, world"
+print(text, "len:", len(text))
+pickled_t = pickle.dumps(text)
+print(type(pickled_t), "len:", len(pickled_t))
+print(pickled_t, end='\n\n')
+
+text = pickle.loads(pickled_t)
+print(text)
+
+exit(0)
+
+
+integer = 1000000000 * 1000000000
+print(integer)
+print(sys.getsizeof(integer))
+
+integer = 0
+print(sys.getsizeof(integer))
 
 n = []
 

@@ -16,7 +16,7 @@ import pylibpcap                    # For easy access to link layer frames
 from pylibpcap.pcap import sniff
 from time import sleep
 
-import pcapy
+import pcapy # Better than pylibpcab, although slightly more cumbersome to use
 
 
 # Port number for sending on diode
@@ -62,7 +62,7 @@ def main() :
         # print(res)
         # sleep(3)
 
-        # sniff() returns generator object, this can be iterated like a loop
+        # sniff() returns a generator object, this can be iterated like a loop
         for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
             # print('len type:', type(plen))
             # print('time type:', type(t))
@@ -93,7 +93,7 @@ def main() :
         sock_send.close()
         print("finished ...")
 
-        
+
 
 # Read allowed ASDUs from config and create access-lookup array
 def create_lookup_table(config) :
@@ -170,7 +170,7 @@ def strip_ethernet_frame(frame) :
         #TODO: Add support for embedded frame size
         print('Error: Unsupported ethernet frame format!')
         exit(1)
-    return frame[payload_start:]   # TODO: remove the trailing checksum here as well
+    return frame[payload_start:]   # TODO: remove the trailing checksum here as well maybe?? (doesn't appear to be one)
 
 # get ip packet and return a copy with ip-header removed
 def strip_ip_header(packet) :
@@ -208,3 +208,19 @@ def strip_tcp_header(segment) :
 
 if __name__ == '__main__' :
     main()
+
+
+
+
+# List of shortcomings:
+"""
+Currently, it doesn't support variable length ip and tcp headers. It only assumes the minimum length
+
+Important: Since the ip protocol can cause fragmentation (and maybe tcp can as well), a single package may
+not correspond to a single ethernet frame. The proram currently assumes that 1 frame = 1 package. This is
+not good, and will cause breakage when this is not the case.
+
+A similar idea might be possible to use for the ICCP protocol. However, this will be much more complicated
+as the ICCP protocol has a much bigger protocol stack, and it is not as easy to find the header structures
+for these protocols
+"""
