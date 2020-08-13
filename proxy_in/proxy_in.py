@@ -33,6 +33,7 @@ def main() :
     config = configparser.ConfigParser()
     config.read(CONFIG_PATH)
 
+    WITH_UDP_TEST = False
     if len(sys.argv) > 1 :
         if sys.argv[1] == '--udp' :
             WITH_UDP_TEST = True
@@ -218,4 +219,7 @@ not good, and will cause breakage when this is not the case.
 A similar idea might be possible to use for the ICCP protocol. However, this will be much more complicated
 as the ICCP protocol has a much bigger protocol stack, and it is not as easy to find the header structures
 for these protocols, and if they even have any
+
+Data sent/received is not converted to network byte order. I do not yet know if the sniff() function does
+automatic convertion to host byte order, or if I have to do this manually in the program.
 """
