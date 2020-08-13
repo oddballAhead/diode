@@ -19,13 +19,15 @@ from time import sleep
 
 import pcapy # Better than pylibpcab, although slightly more cumbersome to use
 
+# Obviously you need to have the various modules installed for the sudo in order
+# to run the program. Consult the webpages for the relevant modules for
+# installation instructions (remember to install as sudo!)
 
 # Port number for sending on diode
 PORT = '60000'
 
 # Specifying a unix file path here, so this will not work on windows...
 CONFIG_PATH = '../config/config.ini'
-WITH_UDP_TEST = False
 
 def main() :
     config = configparser.ConfigParser()
@@ -34,6 +36,7 @@ def main() :
     if len(sys.argv) > 1 :
         if sys.argv[1] == '--udp' :
             WITH_UDP_TEST = True
+    print('WITH_UDP_TEST =', WITH_UDP_TEST)
 
     # Check if this program was started as root.
     # If yes: will attempt to add arp table entry
@@ -67,7 +70,7 @@ def main() :
 
             # Add code to extract ASDU here
             print('ASDU extraction:')
-            apdu = extract_apdu(data)
+            apdu = extract_apdu(data, WITH_UDP_TEST)
 
             if WITH_UDP_TEST :
                 # convert apdu to list of integers
@@ -123,7 +126,7 @@ def valid(apdu, TABLE) :
 # Parse the entire ethernet frame, extract asdu payload and return
 # WARNING: Assuming that only ethernet frames are received,
 #          if another frame type is received, the behavior is unspecified
-def extract_apdu(data) :
+def extract_apdu(data, WITH_UDP_TEST) :
     # step 1: strip ethernet header
     eth_stripped = strip_ethernet_frame(data)
     print('ether stripped:', eth_stripped.hex())
