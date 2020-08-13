@@ -173,12 +173,11 @@ def strip_ip_header(packet) :
     # ip header has variable length, first calculate the length
     first_byte = packet[0]
     IHL = first_byte & 0b1111
-    if IHL > 5 :
-        # Handle longer ip-headers here
-        print('ip-header with options field not supported yet! exiting...')
+    if IHL > 15 :
+        print('Error: IHL-field in ip-header is to large')
         exit(1)
-    elif IHL == 5 :
-        ip_len = 20
+    elif IHL >= 5 :
+        ip_len = IHL * 4
     else :
         print('Error: impossibly small ip-header')
         exit(1)
@@ -191,11 +190,12 @@ def strip_udp_header(dgram) :
 # tcp headers have variable length
 def strip_tcp_header(segment) :
     length = (segment[12] >> 4) & 0b1111
-    if length > 5 :
-        print('Error: longer tcp segments not supported yet')
+
+    if length > 15 :
+        print('Error: length field in tcp-header to big')
         exit(1)
-    elif length == 5 :
-        tcp_hdr_size = 20
+    elif length >= 5 :
+        tcp_hdr_size = length * 4
     else :
         print('Error: tcp-header too small')
         exit(1)
@@ -210,7 +210,11 @@ if __name__ == '__main__' :
 
 # List of issues:
 """
-Currently, it doesn't support variable length ip and tcp headers. It only assumes the minimum length
+Some of the received packets contain a bunch of trailing null-bytes.
+
+There is no check for the ethernet frame type. This means that if the packet has a non-ethernet frame,
+the program will behave in an unspecified manner. Also, non-standard ethernet headers, such as jumbo frames,
+are not supported.
 
 Important: Since the ip protocol can cause fragmentation (and maybe tcp can as well), a single package may
 not correspond to a single ethernet frame. The proram currently assumes that 1 frame = 1 package. This is
