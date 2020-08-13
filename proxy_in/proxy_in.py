@@ -17,6 +17,10 @@ import pylibpcap                    # For easy access to link layer frames
 from pylibpcap.pcap import sniff    # packet sniffing
 from time import sleep
 
+# NOTE: There are 2 different modules that are both called pylibpcap!
+#       One was last updated in 2013 (but that version has the entire api), the
+#       version used here is newer (last update 2020), but is very limited.
+
 import pcapy # Better than pylibpcab, although slightly more cumbersome to use
 
 # Obviously you need to have the various modules installed for the sudo in order
