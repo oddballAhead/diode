@@ -8,12 +8,13 @@
 # Reads a .ini file as a config upon startup.
 #
 
-import configparser                 #
-import socket                       #
+import sys, getopt                  # cmd args
+import configparser                 # for reading ini file
+import socket                       # for udp networking
 import os                           # for creating arp-table entry
 import numpy                        # For getting proper arrays
 import pylibpcap                    # For easy access to link layer frames
-from pylibpcap.pcap import sniff
+from pylibpcap.pcap import sniff    # packet sniffing
 from time import sleep
 
 import pcapy # Better than pylibpcab, although slightly more cumbersome to use
@@ -24,12 +25,15 @@ PORT = '60000'
 
 # Specifying a unix file path here, so this will not work on windows...
 CONFIG_PATH = '../config/config.ini'
-
-WITH_UDP_TEST = True
+WITH_UDP_TEST = False
 
 def main() :
     config = configparser.ConfigParser()
     config.read(CONFIG_PATH)
+
+    if len(sys.argv) > 1 :
+        if sys.argv[1] == '--udp' :
+            WITH_UDP_TEST = True
 
     # Check if this program was started as root.
     # If yes: will attempt to add arp table entry
@@ -47,21 +51,11 @@ def main() :
 
     # Create lookup table
     TABLE = create_lookup_table(config)
-
-    # sock_recv = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
-    # sock_recv.bind(('enp0s25', ))  # TODO: finish this
-    # sock_recv.bind((SELF_IP, int(RECEIVE_PORT)))
+    # Create sending socket
     sock_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     # Starting the main server loop:
     try :
-        # Trying to receive data on a pure udp-socket, this might not work depending on how data is sent
-        # data = sock_recv.recvfrom(int(RECEIVE_PORT))
-
-        # res = sniff("enp0s25", filters="port 60000", count=1, promisc=1, out_file="pcap.pcap")
-        # print(res)
-        # sleep(3)
-
         # sniff() returns a generator object, this can be iterated like a loop
         for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
             # print('len type:', type(plen))
@@ -81,7 +75,6 @@ def main() :
                 print('Length of data received:', len(data_received))
                 print('data received:', data_received, end='\n\n\n')
                 continue
-
             # forward data into diode
             if valid(apdu, TABLE) :
                 print('Apdu valid, re-transmitting...')
@@ -92,7 +85,6 @@ def main() :
         # sock_recv.close()
         sock_send.close()
         print("finished ...")
-
 
 
 # Read allowed ASDUs from config and create access-lookup array
@@ -184,7 +176,7 @@ def strip_ip_header(packet) :
     elif IHL == 5 :
         ip_len = 20
     else :
-        print('What error: impossibly small ip-header')
+        print('Error: impossibly small ip-header')
         exit(1)
     return packet[ip_len:]
 
@@ -212,7 +204,7 @@ if __name__ == '__main__' :
 
 
 
-# List of shortcomings:
+# List of issues:
 """
 Currently, it doesn't support variable length ip and tcp headers. It only assumes the minimum length
 
@@ -222,5 +214,5 @@ not good, and will cause breakage when this is not the case.
 
 A similar idea might be possible to use for the ICCP protocol. However, this will be much more complicated
 as the ICCP protocol has a much bigger protocol stack, and it is not as easy to find the header structures
-for these protocols
+for these protocols, and if they even have any
 """

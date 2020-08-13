@@ -38,3 +38,31 @@ try :
 
 finally :
     sock.close()
+
+
+
+
+##### raw sockets code ########
+
+# sock_recv = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+# sock_recv.bind(('enp0s25', ))  # TODO: finish this
+# sock_recv.bind((SELF_IP, int(RECEIVE_PORT)))
+
+# Trying to receive data on a pure udp-socket, this might not work depending on how data is sent
+# data = sock_recv.recvfrom(int(RECEIVE_PORT))
+
+# res = sniff("enp0s25", filters="port 60000", count=1, promisc=1, out_file="pcap.pcap")
+# print(res)
+# sleep(3)
+
+
+
+
+
+
+
+
+
+
+
+
