@@ -73,8 +73,8 @@ def main() :
             print("[+]: Time", t)
             print("[+]: Payload:", '0x ' + data.hex(), end='\n\n')
 
-            # Add code to extract ASDU here
-            print('ASDU extraction:')
+            # Add code to extract APDU here
+            print('APDU extraction:')
             apdu = extract_apdu(data, WITH_UDP_TEST)
 
             if WITH_UDP_TEST :
@@ -222,7 +222,8 @@ are not supported.
 
 Important: Since the ip protocol can cause fragmentation (and maybe tcp can as well), a single package may
 not correspond to a single ethernet frame. The proram currently assumes that 1 frame = 1 package. This is
-not good, and will cause breakage when this is not the case.
+not good, and will cause breakage when this is not the case. For 104 protocol, this is not a problem, as the
+total frame size is never close to the limit
 
 A similar idea might be possible to use for the ICCP protocol. However, this will be much more complicated
 as the ICCP protocol has a much bigger protocol stack, and it is not as easy to find the header structures
