@@ -21,7 +21,7 @@ from time import sleep
 #       One was last updated in 2013 (but that version has the entire api), the
 #       version used here is newer (last update 2020), but is very limited.
 
-import pcapy # Better than pylibpcab, although slightly more cumbersome to use
+# import pcapy # Better than pylibpcab, although slightly more cumbersome to use
 
 # Obviously you need to have the various modules installed for the sudo in order
 # to run the program. Consult the webpages for the relevant modules for
@@ -65,7 +65,8 @@ def main() :
     # Starting the main server loop:
     try :
         # sniff() returns a generator object, this can be iterated like a loop
-        for plen, t, data in sniff("enp0s25", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
+        # TODO: local ethernet interface cannot be hardcoded!
+        for plen, t, data in sniff("enp3s0", filters="port 60000", count=10, promisc=1, out_file="pcap.pcap"):
             # print('len type:', type(plen))
             # print('time type:', type(t))
             # print('data (payload) type:', type(data))
@@ -218,7 +219,7 @@ Some of the received packets contain a bunch of trailing null-bytes.
 
 There is no check for the ethernet frame type. This means that if the packet has a non-ethernet frame,
 the program will behave in an unspecified manner. Also, non-standard ethernet headers, such as jumbo frames,
-are not supported.
+are not currently supported, but it should be relatively easy to extend the program to allow support for these.
 
 Important: Since the ip protocol can cause fragmentation (and maybe tcp can as well), a single package may
 not correspond to a single ethernet frame. The proram currently assumes that 1 frame = 1 package. This is

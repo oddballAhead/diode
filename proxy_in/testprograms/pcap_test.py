@@ -1,5 +1,5 @@
 
-
+# An example of how to use the sniff() function from pylibpcap.pcap
 
 from pylibpcap.pcap import sniff
 from pylibpcap import get_iface_list

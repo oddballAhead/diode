@@ -1,6 +1,6 @@
 ##
-# A raw tcp listener. Will attempt to receive a connection from
-# a 104 client, and extrack datagrams.
+# A tcp listener. Will attempt to receive a connection from
+# a tcp client, and extrack datagrams.
 #
 
 import socket
